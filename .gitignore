@@ -1,0 +1,10 @@
+node_modules/
+dist/
+reports/*
+!reports/.gitkeep
+logs/*
+!logs/.gitkeep
+test-results/
+.playwright-mcp/
+playwright-report/
+.env

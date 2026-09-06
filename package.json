@@ -1,0 +1,28 @@
+{
+  "name": "qa-pilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "QA automation framework (Playwright + Cucumber + TypeScript) — base for the QA Engineering Agent",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:headed": "cross-env HEADLESS=false cucumber-js",
+    "report:junit": "ts-node helpers/cucumberJsonToJunit.ts",
+    "typecheck": "tsc --noEmit",
+    "azure:verify": "ts-node azure/verifyConnection.ts",
+    "qa:open-pr": "ts-node azure/openQaPr.ts",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.2.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.10.5",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.63.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "azure-devops-node-api": "^17.0.0"
+  }
+}
