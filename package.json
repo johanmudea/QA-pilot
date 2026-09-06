@@ -9,6 +9,12 @@
     "report:junit": "ts-node helpers/cucumberJsonToJunit.ts",
     "typecheck": "tsc --noEmit",
     "azure:verify": "ts-node azure/verifyConnection.ts",
+    "azure:sprint": "ts-node azure/listSprintWorkItems.ts",
+    "azure:hu": "ts-node azure/getWorkItem.ts",
+    "azure:publish-results": "ts-node azure/publishTestResults.ts",
+    "azure:sync-testcases": "ts-node azure/createTestCasesFromFeature.ts",
+    "azure:sprint-details": "ts-node azure/dumpSprintDetails.ts",
+    "azure:fix-suite-membership": "ts-node azure/fixSuiteMembership.ts",
     "qa:open-pr": "ts-node azure/openQaPr.ts",
     "postinstall": "playwright install chromium"
   },
@@ -20,6 +26,7 @@
     "dotenv": "^16.4.7",
     "playwright": "^1.63.0",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3"
   },
   "dependencies": {

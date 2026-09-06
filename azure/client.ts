@@ -1,9 +1,10 @@
 import * as azdev from "azure-devops-node-api";
 import { JsonPatchOperation, Operation } from "azure-devops-node-api/interfaces/common/VSSInterfaces";
-import { WorkItem } from "azure-devops-node-api/interfaces/WorkItemTrackingInterfaces";
-import { TestPlan, TestSuite, TestSuiteCreateParams } from "azure-devops-node-api/interfaces/TestPlanInterfaces";
-import { RunCreateModel, TestRun, TestCaseResult } from "azure-devops-node-api/interfaces/TestInterfaces";
+import { WorkItem, WorkItemExpand } from "azure-devops-node-api/interfaces/WorkItemTrackingInterfaces";
+import { TestPlan, TestSuite, TestSuiteCreateParams, TestSuiteType } from "azure-devops-node-api/interfaces/TestPlanInterfaces";
+import { RunCreateModel, TestRun, TestCaseResult, TestPoint } from "azure-devops-node-api/interfaces/TestInterfaces";
 import { GitPullRequest } from "azure-devops-node-api/interfaces/GitInterfaces";
+import { TeamContext } from "azure-devops-node-api/interfaces/CoreInterfaces";
 import { env } from "../config/env";
 import { logger } from "../helpers/logger";
 
@@ -47,6 +48,30 @@ export class AzureDevOpsClient {
     return witApi.getWorkItem(id, undefined, undefined, undefined, this.project);
   }
 
+  async getWorkItemRelations(id: number): Promise<{ rel?: string; url?: string }[]> {
+    const connection = await this.getConnection();
+    const witApi = await connection.getWorkItemTrackingApi();
+    const item = await witApi.getWorkItem(id, undefined, undefined, WorkItemExpand.Relations, this.project);
+    return item.relations ?? [];
+  }
+
+  /** Removes a relation from a work item by matching rel type + target url (relations are indexed per-item). */
+  async removeWorkItemRelation(id: number, targetId: number, relType: string): Promise<boolean> {
+    const connection = await this.getConnection();
+    const witApi = await connection.getWorkItemTrackingApi();
+    const relations = await this.getWorkItemRelations(id);
+    const index = relations.findIndex(
+      (r) => r.rel === relType && r.url?.endsWith(`/${targetId}`)
+    );
+    if (index === -1) {
+      return false;
+    }
+    const document: JsonPatchOperation[] = [{ op: Operation.Remove, path: `/relations/${index}` }];
+    await witApi.updateWorkItem({}, document, id, this.project);
+    logger.info(`Removed relation ${relType} from work item ${id} -> ${targetId}`);
+    return true;
+  }
+
   async getTestPlans(): Promise<TestPlan[]> {
     const connection = await this.getConnection();
     const testPlanApi = await connection.getTestPlanApi();
@@ -60,6 +85,41 @@ export class AzureDevOpsClient {
     return testPlanApi.getTestSuitesForPlan(this.project, planId);
   }
 
+  /**
+   * Lists the work items (HUs, tasks, bugs...) in a sprint — the "Discover" step of
+   * the daily cycle (rules/azure-policy.md). `iterationPath` matches a team
+   * iteration's `path`, e.g. "Summa - Summa Network\Evaluacion proveedores\Sprint 2"
+   * (as it appears in a sprint board URL).
+   */
+  async getSprintWorkItems(teamName: string, iterationPath: string): Promise<WorkItem[]> {
+    const connection = await this.getConnection();
+    const workApi = await connection.getWorkApi();
+    const teamContext: TeamContext = { project: this.project, team: teamName };
+
+    const iterations = await workApi.getTeamIterations(teamContext);
+    const iteration = iterations.find(
+      (it) => it.path?.toLowerCase() === iterationPath.toLowerCase()
+    );
+    if (!iteration?.id) {
+      const available = iterations.map((it) => it.path).join(", ");
+      throw new Error(
+        `Iteration "${iterationPath}" not found for team "${teamName}". Available: ${available}`
+      );
+    }
+
+    const iterationWorkItems = await workApi.getIterationWorkItems(teamContext, iteration.id);
+    const ids = (iterationWorkItems.workItemRelations ?? [])
+      .map((relation) => relation.target?.id)
+      .filter((id): id is number => typeof id === "number");
+
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const witApi = await connection.getWorkItemTrackingApi();
+    return witApi.getWorkItems(ids, undefined, undefined, undefined, undefined, this.project);
+  }
+
   // ---- Writes ----
 
   async createTestCase(fields: Record<string, string | number>): Promise<WorkItem> {
@@ -68,6 +128,16 @@ export class AzureDevOpsClient {
     const document = this.toPatchDocument(fields);
     const workItem = await witApi.createWorkItem({}, document, this.project, "Test Case");
     logger.info(`Created Test Case ${workItem.id}: ${fields["System.Title"]}`);
+    return workItem;
+  }
+
+  /** Updates an existing Test Case's fields (e.g. re-translating title/steps) without touching its links/suite membership. */
+  async updateTestCase(id: number, fields: Record<string, string | number>): Promise<WorkItem> {
+    const connection = await this.getConnection();
+    const witApi = await connection.getWorkItemTrackingApi();
+    const document = this.toPatchDocument(fields);
+    const workItem = await witApi.updateWorkItem({}, document, id, this.project);
+    logger.info(`Updated Test Case ${id}: ${fields["System.Title"]}`);
     return workItem;
   }
 
@@ -118,6 +188,29 @@ export class AzureDevOpsClient {
     return suite;
   }
 
+  /**
+   * A Requirement-based Suite — tied to one work item (HU). Per the user's
+   * convention: one such suite per HU, nested under a parent "home" suite.
+   */
+  async createRequirementBasedSuite(
+    planId: number,
+    parentSuiteId: number,
+    workItemId: number,
+    name: string
+  ): Promise<TestSuite> {
+    const connection = await this.getConnection();
+    const testPlanApi = await connection.getTestPlanApi();
+    const params: TestSuiteCreateParams = {
+      name,
+      parentSuite: { id: parentSuiteId, name: "" },
+      suiteType: TestSuiteType.RequirementTestSuite,
+      requirementId: workItemId,
+    };
+    const suite = await testPlanApi.createTestSuite(params, this.project, planId);
+    logger.info(`Created Requirement-based Suite ${suite.id} "${name}" for HU-${workItemId} in plan ${planId}`);
+    return suite;
+  }
+
   async addTestCaseToSuite(planId: number, suiteId: number, testCaseId: number): Promise<void> {
     const connection = await this.getConnection();
     const testApi = await connection.getTestApi();
@@ -159,6 +252,38 @@ export class AzureDevOpsClient {
     const updated = await testApi.updateTestResults(results, this.project, runId);
     logger.info(`Published result for run ${runId}, result ${testCaseResultId}: ${passed ? "PASSED" : "FAILED"}`);
     return updated;
+  }
+
+  /** Publishes several outcomes in one run — used by the `@testcase:<id>` sync (see rules/gherkin-policy.md). */
+  async publishTestResultsBatch(
+    runId: number,
+    updates: { resultId: number; passed: boolean; comment?: string }[]
+  ): Promise<TestCaseResult[]> {
+    const connection = await this.getConnection();
+    const testApi = await connection.getTestApi();
+    const results: TestCaseResult[] = updates.map((u) => ({
+      id: u.resultId,
+      outcome: u.passed ? "Passed" : "Failed",
+      state: "Completed",
+      comment: u.comment,
+    }));
+    const updated = await testApi.updateTestResults(results, this.project, runId);
+    logger.info(`Published ${updates.length} result(s) to run ${runId}`);
+    return updated;
+  }
+
+  /** The Test Point(s) a Test Case has within a Suite — needed before a run can record a result for it. */
+  async getTestPointsForCase(planId: number, suiteId: number, testCaseId: number): Promise<TestPoint[]> {
+    const connection = await this.getConnection();
+    const testApi = await connection.getTestApi();
+    return testApi.getPoints(this.project, planId, suiteId, undefined, undefined, String(testCaseId));
+  }
+
+  /** Results Azure auto-creates (one per point) when a Test Run is created — read to discover their ids. */
+  async getTestResults(runId: number): Promise<TestCaseResult[]> {
+    const connection = await this.getConnection();
+    const testApi = await connection.getTestApi();
+    return testApi.getTestResults(this.project, runId);
   }
 
   /**

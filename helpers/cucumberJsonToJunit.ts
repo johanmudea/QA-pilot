@@ -1,24 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-
-interface CucumberStep {
-  keyword: string;
-  name?: string;
-  hidden?: boolean;
-  result: { status: string; duration?: number; error_message?: string };
-}
-
-interface CucumberScenario {
-  id: string;
-  name: string;
-  steps: CucumberStep[];
-}
-
-interface CucumberFeature {
-  name: string;
-  uri: string;
-  elements: CucumberScenario[];
-}
+import { readCucumberReport, getScenarioOutcome } from "./cucumberReport";
 
 /**
  * Converts cucumber-js's legacy JSON report (reports/cucumber-report.json) into a
@@ -27,31 +9,27 @@ interface CucumberFeature {
  * snippets/usage) — see rules/ci-policy.md.
  */
 export function convertCucumberJsonToJunit(jsonPath: string, xmlPath: string): void {
-  const features: CucumberFeature[] = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+  const features = readCucumberReport(jsonPath);
 
   const suites = features.map((feature) => {
     const cases = feature.elements.map((scenario) => {
-      const steps = scenario.steps.filter((s) => !s.hidden);
-      const failed = steps.find((s) => s.result.status === "failed");
-      const notPassed = steps.find((s) => s.result.status !== "passed");
-      const durationSeconds =
-        scenario.steps.reduce((sum, s) => sum + (s.result.duration ?? 0), 0) / 1e9;
+      const outcome = getScenarioOutcome(scenario);
 
       let body = "";
-      if (failed) {
-        const message = escapeXml(failed.result.error_message ?? "Step failed");
+      if (outcome.failed) {
+        const message = escapeXml(outcome.errorMessage ?? "Step failed");
         body = `<failure message="${escapeXml(truncate(message, 200))}">${message}</failure>`;
-      } else if (notPassed) {
-        body = `<skipped message="${escapeXml(notPassed.result.status)}"/>`;
+      } else if (outcome.skipped) {
+        body = `<skipped/>`;
       }
 
       return {
         name: escapeXml(scenario.name),
         classname: escapeXml(feature.name),
-        time: durationSeconds.toFixed(3),
+        time: outcome.durationSeconds.toFixed(3),
         body,
-        failed: Boolean(failed),
-        skipped: Boolean(notPassed) && !failed,
+        failed: outcome.failed,
+        skipped: outcome.skipped,
       };
     });
 

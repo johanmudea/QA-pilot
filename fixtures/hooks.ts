@@ -1,7 +1,7 @@
 import { Before, After, BeforeAll, AfterAll, Status } from "@cucumber/cucumber";
 import { chromium, Browser } from "playwright";
-import { env } from "../config/env";
-import { logger } from "../helpers/logger";
+import { env } from "@config/env";
+import { logger } from "@helpers/logger";
 import { QaWorld } from "./world";
 
 let browser: Browser;

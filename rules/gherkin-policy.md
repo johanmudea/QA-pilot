@@ -4,10 +4,23 @@ Gherkin in this repo is a QA contract, not just Cucumber input. A non-technical
 reviewer (or the Azure DevOps Test Case it maps to) must be able to read a scenario
 and understand the business behavior without reading any code.
 
+## Language
+
+Any feature carrying an `@hu:<id>` tag (i.e. tied to a real client work item) is
+written in **Spanish**, using Cucumber's Spanish Gherkin dialect — the client reads
+these as Azure Test Plans Test Cases and must not need a translator. Start the file
+with `# language: es` and use `Característica`/`Antecedentes`/`Escenario` and
+`Dado`/`Cuando`/`Entonces`/`Y` instead of the English keywords (see
+`features/pqrs-creation-step1.feature` for the reference example). Internal
+framework scaffolding not tied to a client HU (e.g. `features/login.feature`, our own
+demo) stays in English. `helpers/gherkinParser.ts` and `helpers/tcmSteps.ts`
+recognize both keyword sets.
+
 ## Writing scenarios
 
 1. **Business language only.** No selectors, no HTTP verbs, no table/column names.
-   - Good: `Given the user is on the login page`
+   - Good (English framework demo): `Given the user is on the login page`
+   - Good (client-facing, Spanish): `Dado que el usuario está en la pantalla de login`
    - Bad: `Given the browser navigates to "/login"`
 2. **One scenario = one behavior.** Do not chain unrelated assertions into a single
    scenario to save time — that produces a test that fails for ambiguous reasons.
@@ -38,6 +51,45 @@ Feature: Authentication
 - `Scenario:` = one Test Case (maps 1:1 — see [azure-policy.md](./azure-policy.md)).
 - Steps are declarative ("the user submits the login form"), not imperative
   ("the user clicks the button with text Login").
+
+## Tags — the link to Azure Test Plans and test selection
+
+Every `Scenario:` that has (or will have) a corresponding Azure Test Plans Test Case
+carries these tags, placed directly above the `Scenario:` line:
+
+```gherkin
+@hu:89951 @testcase:112233 @regression
+Scenario: Login with invalid credentials
+  ...
+```
+
+| Tag | Meaning | Required? |
+|---|---|---|
+| `@hu:<id>` | The Azure DevOps Work Item (HU/User Story) this scenario verifies | Yes, on every scenario tied to a real HU |
+| `@testcase:<id>` | The Azure Test Plans **Test Case** work item id this scenario is 1:1 with | Once the Test Case exists (see [azure-policy.md](./azure-policy.md)) — a scenario without one yet is still valid, just not synced |
+| `@regression` | Runs on every build; protects a path that must never silently break | When the scenario covers previously-working behavior, not just the current HU |
+| `@critical` | Business-critical path; a failure here should block a release | Sparingly — critical means "the business stops" if this breaks, not "important" |
+| `@smoke` | Part of the fast, minimal build-verification subset | Only for the handful of scenarios that prove the app is even up |
+
+**Why `@testcase:<id>` and not `@hu:<id>` alone**: one HU can produce several Test
+Cases (functional, negative, boundary — see
+[automation-policy.md](./automation-policy.md)), each with its own pass/fail history
+in Azure Test Plans. `@hu:<id>` groups them for traceability; `@testcase:<id>` is what
+`azure/publishTestResults.ts` reads to know exactly which Test Case's result to update.
+
+**Selecting scenarios to run** uses the same tags via cucumber-js's `--tags`:
+
+```
+npx cucumber-js --tags "@regression"
+npx cucumber-js --tags "@critical and not @smoke"
+```
+
+**Implementation**: `npm run azure:publish-results -- --plan <planId> --suite <suiteId>`
+(`azure/publishTestResults.ts`) reads `reports/cucumber-report.json`, finds every
+`@testcase:<id>`-tagged scenario, resolves its Test Point in that plan/suite
+(`AzureDevOpsClient.getTestPointsForCase`), creates one Test Run covering all of them,
+and publishes each outcome — so running the automated scenario is what marks the
+Azure Test Plans Test Case Passed/Failed, not a separate manual step.
 
 ## What does NOT belong in a `.feature` file
 

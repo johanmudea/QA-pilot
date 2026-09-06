@@ -9,7 +9,7 @@ step definition, a fixture, or a feature file.
 ```ts
 // pages/LoginPage.ts — correct: locator lives here, wrapped in a named action
 async enterUsername(username: string): Promise<void> {
-  await this.page.fill("#username", username);
+  await this.page.getByRole("textbox", { name: "Username" }).fill(username);
 }
 ```
 
@@ -30,7 +30,8 @@ Object/Component — do not reach into the page from a step to re-query the elem
    accessibility tree.
 2. **Test id** — `page.getByTestId("login-submit")` — when the app exposes one.
 3. **Stable semantic attribute** — `#id`, `name="..."` — acceptable when the id is part
-   of the application's contract (e.g. `#username`, `#password` on a login form).
+   of the application's contract and no accessible role/name exists (e.g. `#flash` in
+   `components/FlashMessage.ts` — a banner `div`, not a labeled control).
 4. **CSS class** — only when nothing above is available, and only if the class is
    structural (`.flash.error`), not a styling utility class that a designer could rename
    without changing behavior.
@@ -51,4 +52,6 @@ Object/Component — do not reach into the page from a step to re-query the elem
    itself.
 4. **Components own their own locators.** A `Header` or `Modal` component exposes
    methods (`header.openUserMenu()`), and the Page Object composes the component
-   instead of duplicating its selectors.
+   instead of duplicating its selectors — e.g. `components/FlashMessage.ts` is used
+   by both `LoginPage` and `SecurePage` via a `flashMessage` property, instead of each
+   page re-implementing `#flash` handling.

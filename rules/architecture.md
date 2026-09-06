@@ -19,7 +19,7 @@ playwright · fixtures/   (mechanics — browser, context, page, clients)
 |---|---|---|
 | `features/` | `.gherkin` scenarios, business language | selectors, waits, code |
 | `steps/` | step definitions, one-line calls into pages/api/db | raw locators, assertions on implementation detail, business logic |
-| `pages/` | one class per page, its locators, its actions | test data, assertions about business rules unrelated to the page |
+| `pages/` | one class per page, its locators, its actions, extending `BasePage` | test data, assertions about business rules unrelated to the page |
 | `components/` | reusable UI fragments shared by 2+ pages (header, modal, table) | page-specific logic |
 | `fixtures/` | Cucumber `World`, hooks (`Before`/`After`/`BeforeAll`/`AfterAll`), test context wiring | UI locators, business logic |
 | `helpers/` | cross-cutting utilities (logger, retry, formatting) | anything tied to one specific page/feature |
@@ -51,6 +51,17 @@ playwright · fixtures/   (mechanics — browser, context, page, clients)
 5. **UI, API, and DB tests are peers, not a hierarchy.** A single HU/work item may
    produce Page Object-based scenarios, API-based scenarios, and DB-validation
    scenarios. See [automation-policy.md](./automation-policy.md) for how to decide which.
+6. **Every Page Object extends `BasePage`** (`pages/BasePage.ts`) — it holds the
+   shared `protected readonly page` and is where cross-page behavior goes if it's
+   ever needed, instead of each page redeclaring its own constructor.
+7. **Cross-folder imports use the path aliases** (`@pages`, `@components`,
+   `@fixtures`, `@config/*`, `@helpers/*` — see `tsconfig.json`), not `../../` chains.
+   A file importing a sibling in its own folder (e.g. `fixtures/hooks.ts` importing
+   `./world`) still uses a relative import — aliases are for crossing folder
+   boundaries, not for every import. `pages/index.ts`, `components/index.ts`, and
+   `fixtures/index.ts` are barrel exports — prefer `import { LoginPage } from
+   "@pages"` over reaching into `@pages/LoginPage` directly when consuming from
+   another layer (`steps/`).
 
 ## Related
 [naming-conventions.md](./naming-conventions.md) · [locator-policy.md](./locator-policy.md) ·

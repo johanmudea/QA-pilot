@@ -14,6 +14,15 @@ An agent never uses a free-form/inferred call to perform a write operation. Writ
 through a fixed, reviewed API client — the agent decides *what* to write, a
 deterministic layer decides *how*.
 
+**Verified live** (2026-09-06, org `summa-sci` / project "Summa - Summa Network"):
+`AzureDevOpsClient.getSprintWorkItems(team, iterationPath)` — `npm run azure:sprint --
+--team "<team>" --iteration "<path>"` — lists every work item in a sprint by
+resolving the team's iteration then reading its `workItemRelations`. This is the
+"Discover" step's read, implemented as a client method (not yet the Azure DevOps MCP,
+which isn't connected in this environment) — same deterministic layer as the writes,
+used here for a read because no MCP is available. `getWorkItem(id)` reads one item's
+full fields/acceptance criteria once an id is picked from the sprint list.
+
 ## Traceability chain
 
 Every automated scenario must be traceable in both directions:
@@ -56,6 +65,28 @@ together by `npm run qa:open-pr -- --workItem <id> --slug <slug> --title <title>
 
 The PR description always includes `AB#<work-item-id>` so Azure DevOps auto-links it
 to the HU, in addition to the explicit `workItemRefs` set on the PR.
+
+## Test Cases per HU: Requirement-based Suites
+
+Per HU, `AzureDevOpsClient.createRequirementBasedSuite(planId, parentSuiteId, huId,
+name)` creates one Requirement-based Suite (`TestSuiteType.RequirementTestSuite`)
+nested under a shared parent suite, so every HU's Test Cases live in their own suite
+instead of one flat list.
+
+**A Requirement-based Suite's membership is established by `addTestCaseToSuite`
+alone** — that single call both creates the correct "Tests"/"Tested By" link to the
+HU *and* registers the Test Case as a suite member with a Test Point. **Never** also
+call `linkWorkItems(testCaseId, huId, "Microsoft.VSTS.Common.TestedBy-Forward")` —
+that creates the link in the reverse direction, which (a) leaves the suite showing
+empty ("Add a test case") in the Azure UI even though a relation technically exists,
+and (b) makes any later `addTestCaseToSuite` call fail with `TF201035: ... circular
+relationship` because Azure sees both directions of the same link between the same
+two items. `azure/createTestCasesFromFeature.ts` (`npm run azure:sync-testcases`)
+does this correctly; `azure/fixSuiteMembership.ts` (`npm run
+azure:fix-suite-membership`) is the one-off repair script that undid the wrong
+direction across all Test Cases created before this was caught — verify with
+`getTestPointsForCase` (a non-empty result confirms real suite membership) before
+trusting that a batch of Test Cases actually shows up in its suite.
 
 ## QA state per HU
 

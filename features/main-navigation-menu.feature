@@ -1,0 +1,27 @@
+# language: es
+# HU-89930: Implementar menú principal de navegación SP1
+Característica: Menú principal de navegación
+
+  Como usuario del módulo de Evaluación de Proveedores
+  Quiero un menú principal organizado por módulos funcionales
+  Para acceder de forma rápida y centralizada a las diferentes opciones
+
+  Antecedentes:
+    Dado que el usuario está en el módulo de Evaluación de Proveedores
+
+  @hu:89930 @regression @smoke @testcase:91421
+  Escenario: El menú lateral está visible con las tres categorías principales
+    Entonces el menú lateral debe estar visible
+    Y el menú debe mostrar las categorías "Evaluación 360", "PQRS" y "Configuraciones"
+
+  @hu:89930 @regression @testcase:91422
+  Escenario: La categoría Evaluación 360 muestra sus submenús
+    Entonces la categoría "Evaluación 360" debe contener los submenús "Consultar", "Ranking de proveedores", "Ranking de usuarios" y "Reportes"
+
+  @hu:89930 @regression @critical @testcase:91423
+  Escenario: La categoría PQRS muestra sus submenús
+    Entonces la categoría "PQRS" debe contener los submenús "Crear" y "Mis PQRS"
+
+  @hu:89930 @regression @testcase:91424
+  Escenario: La categoría Configuraciones muestra su submenú
+    Entonces la categoría "Configuraciones" debe contener el submenú "Administración de evaluaciones"

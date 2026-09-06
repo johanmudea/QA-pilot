@@ -9,7 +9,18 @@
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@pages": ["pages/index"],
+      "@pages/*": ["pages/*"],
+      "@components": ["components/index"],
+      "@components/*": ["components/*"],
+      "@fixtures": ["fixtures/index"],
+      "@fixtures/*": ["fixtures/*"],
+      "@config/*": ["config/*"],
+      "@helpers/*": ["helpers/*"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist", "reports"]
