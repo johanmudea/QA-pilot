@@ -15,6 +15,8 @@
     "azure:sync-testcases": "ts-node azure/createTestCasesFromFeature.ts",
     "azure:sprint-details": "ts-node azure/dumpSprintDetails.ts",
     "azure:fix-suite-membership": "ts-node azure/fixSuiteMembership.ts",
+    "azure:record-manual-run": "ts-node azure/recordManualRun.ts",
+    "azure:record-manual-run-steps": "ts-node azure/recordManualRunSteps.ts",
     "qa:open-pr": "ts-node azure/openQaPr.ts",
     "postinstall": "playwright install chromium"
   },

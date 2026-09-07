@@ -97,6 +97,9 @@ Scenario: Login with invalid credentials
 | `@regression` | Runs on every build; protects a path that must never silently break | When the scenario covers previously-working behavior, not just the current HU |
 | `@critical` | Business-critical path; a failure here should block a release | Sparingly — critical means "the business stops" if this breaks, not "important" |
 | `@smoke` | Part of the fast, minimal build-verification subset | Only for the handful of scenarios that prove the app is even up |
+| `@manual` | Test idea classified **Manual** in [automation-policy.md](./automation-policy.md) (visual/UX judgment, non-deterministic) — exists only as an Azure Test Plans Test Case for a human tester to execute, has no step definitions, and is excluded from `npm test` via `cucumber.json`'s `"tags": "not @manual"` | On every scenario that is not, and will not be, automated |
+
+**`@manual` scenarios still go through the same Gherkin → Azure pipeline** (`azure/createTestCasesFromFeature.ts`, CP_XX naming, Requirement-based Suite) — Gherkin's Given/When/Then still becomes the Test Case's Action/Expected Result steps, which is exactly the format a manual tester reads in Azure Test Plans. The only difference from an automated scenario is that no `steps/*.steps.ts` file is written for it and it never runs in CI. `createTestCase`/`updateTestCase` never set `Microsoft.VSTS.TCM.AutomationStatus`, so Azure defaults it to "Not Automated" — correct for these without any extra step.
 
 **Why `@testcase:<id>` and not `@hu:<id>` alone**: one HU can produce several Test
 Cases (functional, negative, boundary — see
