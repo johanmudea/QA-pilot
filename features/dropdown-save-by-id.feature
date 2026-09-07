@@ -9,14 +9,14 @@ Característica: Guardado de opciones de listas desplegables por ID
   Para garantizar la integridad y normalización de la información
 
   @hu:91279 @regression @critical @testcase:91498
-  Escenario: Seleccionar una opción de lista desplegable guarda su ID, no su valor de texto
+  Escenario: CP_01 - TC91498 - Seleccionar una opción de lista desplegable guarda su ID, no su valor de texto
     Dado que el usuario selecciona una opción en una lista desplegable respaldada por data maestra
     Cuando la selección se persiste
     Entonces el valor almacenado debe ser el ID de data maestra de la opción
     Y el valor almacenado no debe ser el valor de texto/string de la opción
 
   @hu:91279 @regression @critical @testcase:91499
-  Escenario: Mostrar una selección guardada resuelve su nombre a partir del ID
+  Escenario: CP_02 - TC91499 - Mostrar una selección guardada resuelve su nombre a partir del ID
     Dado que un registro se guardó con un ID de lista desplegable de data maestra
     Cuando se consulta la información de ese registro
     Entonces el nombre visible de la opción debe resolverse a partir del ID almacenado

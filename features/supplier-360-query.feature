@@ -10,24 +10,24 @@ Característica: Pantalla de Consulta de Proveedores 360
     Dado que el usuario está en la pantalla de Consulta de Proveedores 360
 
   @hu:90064 @regression @smoke @testcase:91444
-  Escenario: La pantalla muestra el mensaje descriptivo y no hay resultados antes de buscar
+  Escenario: CP_01 - TC91444 - La pantalla muestra el mensaje descriptivo y no hay resultados antes de buscar
     Entonces el mensaje descriptivo "En este espacio podrás consultar las evaluaciones y PQRS de tus proveedores" debe estar visible
     Y debe mostrarse un mensaje informativo indicando que se requiere una búsqueda
     Y no debe mostrarse información de proveedores
 
   @hu:90064 @regression @critical @testcase:91445
-  Escenario: Los filtros de búsqueda están disponibles
+  Escenario: CP_02 - TC91445 - Los filtros de búsqueda están disponibles
     Entonces los filtros "Nombre del proveedor", "ID Fiscal" y "Código o ID ERP" deben aceptar ingreso manual de texto
     Y el filtro "Tipo de información" debe permitir seleccionar múltiples opciones entre "PQRS", "SAP" y "Prevsis"
 
   @hu:90064 @regression @critical @testcase:91446
-  Escenario: Aplicar filtros ejecuta la consulta y conserva los filtros diligenciados
+  Escenario: CP_03 - TC91446 - Aplicar filtros ejecuta la consulta y conserva los filtros diligenciados
     Cuando el usuario aplica los filtros
     Entonces la consulta debe ejecutarse utilizando todos los criterios seleccionados
     Y los filtros diligenciados deben permanecer visibles después de la consulta
 
   @hu:90064 @regression @testcase:91447
-  Escenario: Limpiar filtros restablece el componente a su estado inicial
+  Escenario: CP_04 - TC91447 - Limpiar filtros restablece el componente a su estado inicial
     Cuando el usuario limpia los filtros
     Entonces todos los filtros deben volver a su estado inicial
     Y debe mostrarse nuevamente el mensaje informativo indicando que se requiere una búsqueda

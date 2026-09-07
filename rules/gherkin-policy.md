@@ -52,6 +52,33 @@ Feature: Authentication
 - Steps are declarative ("the user submits the login form"), not imperative
   ("the user clicks the button with text Login").
 
+## Scenario naming — CP_XX and the Test Case id
+
+Every `Scenario:`/`Escenario:` name (client-facing, `@hu:`-tagged features) follows:
+
+```
+CP_XX - TC<testCaseId> - <descripción del comportamiento>
+```
+
+```gherkin
+@hu:89951 @regression @smoke @testcase:91410
+Escenario: CP_01 - TC91410 - La pantalla del paso 1 muestra el título y el mensaje descriptivo
+```
+
+- `CP_XX` is a **sequential number per feature file**, zero-padded to 2 digits,
+  restarting at `CP_01` for every `.feature` (i.e. every HU) — not a sprint-wide
+  counter. It gives the client a short, stable code to reference a case in
+  conversation ("falló el CP_05") without needing the Azure id.
+- `TC<testCaseId>` is the same id already carried in the `@testcase:<id>` tag,
+  repeated in the title so it's visible directly in the Azure Test Plans grid and in
+  test reports, without opening the work item.
+- The rest of the name is the original business-behavior description — do not lose
+  meaning to make room for the prefix.
+- `azure/createTestCasesFromFeature.ts` writes `scenario.name` verbatim into
+  `System.Title`, so renaming a scenario and re-running `azure:sync-testcases`
+  updates the Test Case title in Azure automatically (update path, not create —
+  see [azure-policy.md](./azure-policy.md)).
+
 ## Tags — the link to Azure Test Plans and test selection
 
 Every `Scenario:` that has (or will have) a corresponding Azure Test Plans Test Case
