@@ -13,8 +13,13 @@ export const env = {
     repo: process.env.AZURE_DEVOPS_REPO,
     defaultBranch: process.env.AZURE_DEVOPS_DEFAULT_BRANCH ?? "main",
   },
-  summaApp: {
-    url: process.env.SUMMA_APP_URL,
+  summaProviders: {
+    url: process.env.SUMMA_PROVIDERS_URL,
+    testUserEmail: process.env.SUMMA_TEST_USER_EMAIL,
+    testUserPassword: process.env.SUMMA_TEST_USER_PASSWORD,
+  },
+  summaSourcing: {
+    url: process.env.SUMMA_SOURCING_URL,
     testUserEmail: process.env.SUMMA_TEST_USER_EMAIL,
     testUserPassword: process.env.SUMMA_TEST_USER_PASSWORD,
   },

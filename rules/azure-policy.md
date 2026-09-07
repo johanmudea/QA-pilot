@@ -88,6 +88,49 @@ direction across all Test Cases created before this was caught — verify with
 `getTestPointsForCase` (a non-empty result confirms real suite membership) before
 trusting that a batch of Test Cases actually shows up in its suite.
 
+## Manual test execution: per-step results, evidence, and linked Bugs
+
+For `@manual` scenarios (see [gherkin-policy.md](./gherkin-policy.md)), a run is a
+human (or an agent acting as one) actually exercising the app — never inferred.
+`azure/recordManualRunSteps.ts` (`npm run azure:record-manual-run-steps -- --data
+<results.json> --hu <workItemId>`) is the tool for this:
+
+- **One outcome per Test Case step**, not just one outcome for the whole result —
+  Azure's `iterationDetails`/`actionResults` mechanism
+  (`AzureDevOpsClient.publishManualStepResults`). Step order in the input JSON is
+  1-based and must match the Test Case's actual `<step id="N">` order — verify with
+  a throwaway `gherkinStepsToTcmRows(scenario.steps)` dump against the source
+  `.feature` before writing results, since Background steps are prepended to every
+  scenario (`helpers/gherkinParser.ts`) and count as step 1.
+- **Evidence at both levels**: a result-level attachment
+  (`addTestResultAttachment`) so it's visible without opening a step, AND a
+  step-level attachment (`addTestIterationResultAttachment`) on the specific step
+  it belongs to. Skipping the result-level one is what evidence looking "gone"
+  usually means — the viewer wasn't looking inside the step's iteration detail.
+- **A Failed step opens a linked Bug** (`createBug` + `linkWorkItems` with
+  `System.LinkTypes.Related` — not `-Forward`/`-Reverse`, those don't exist for this
+  symmetric relation type) to both the Test Case and the HU, so the defect is
+  traceable from either side.
+- **Re-verifying a known defect must reuse its Bug, not open a new one.** Pass that
+  Test Case's `existingBugId` in the results JSON — when set, a "Failed" outcome
+  adds a comment + fresh evidence to that Bug instead of calling `createBug` again.
+  Omitting it on a re-run is exactly how Bugs 91571–91575 ended up as accidental
+  duplicates of 91561–91565 (same 5 HU-90129 defects, re-verified a day later) —
+  fixed after the fact with a `System.LinkTypes.Related` link + a comment pointing
+  each duplicate back at its canonical Bug, since deleting them outright wasn't
+  worth the risk for a mistake this cheap to leave a paper trail for instead.
+
+**Do not embed evidence as a base64 `data:` URI inside a rich-text field** (e.g.
+`Microsoft.VSTS.TCM.ReproSteps`) — Azure DevOps silently strips `data:`-URI `<img>`
+tags from HTML fields on save. Verified by reading the field back after such a save
+and finding no image, despite the write returning success. The real mechanism is a
+Work Item **file attachment**, which `azure-devops-node-api`'s `WorkItemTrackingApi`
+does not wrap (no `createAttachment` in this SDK version) — call the REST endpoint
+directly with the same PAT (`AzureDevOpsClient.attachFileToWorkItem`: `POST
+_apis/wit/attachments`, then a JsonPatch `AttachedFile` relation pointing at the
+returned attachment URL). Verify with `getWorkItemRelations` and check
+`attributes.resourceSize` matches the real file size before trusting the upload.
+
 ## QA state per HU
 
 Maintain a per-HU state record (JSON, checked into the repo or stored alongside the
