@@ -111,6 +111,11 @@ human (or an agent acting as one) actually exercising the app — never inferred
   `System.LinkTypes.Related` — not `-Forward`/`-Reverse`, those don't exist for this
   symmetric relation type) to both the Test Case and the HU, so the defect is
   traceable from either side.
+- **The Bug's title and description cite the `@ac:<n>` this Test Case maps to**
+  (read straight from the source `.feature` via `getAcLabel` — never hand-typed, so
+  it can't drift from the tag itself) — e.g. `[HU-90129] [AC 9,19] Test Case 91539:
+  ...`, plus a comment with the exact criterion text. A reader lands on the Bug
+  already knowing which requirement line is broken, not just which HU.
 - **Re-verifying a known defect must reuse its Bug, not open a new one.** Pass that
   Test Case's `existingBugId` in the results JSON — when set, a "Failed" outcome
   adds a comment + fresh evidence to that Bug instead of calling `createBug` again.

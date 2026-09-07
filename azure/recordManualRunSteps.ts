@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { AzureDevOpsClient } from "./client";
+import { parseFeatureFile } from "../helpers/gherkinParser";
 import { logger } from "../helpers/logger";
 
 /**
@@ -59,7 +60,18 @@ interface ManualRunData {
   plan: number;
   suite: number;
   runName: string;
+  /** Source .feature file — used to read each Test Case's real "@ac:<n>" tag (see gherkin-policy.md) for the Bug title/description. */
+  featurePath?: string;
   results: ManualResultInput[];
+}
+
+/** Reads the "@ac:<n>[,<n>...]" / "@ac:<n>-<m>" tag off the scenario carrying this "@testcase:<id>" — same source of truth as azure/createTestCasesFromFeature.ts, so a Bug always cites the real requirement, never a hand-typed (and driftable) copy of it. */
+function getAcLabel(featurePath: string | undefined, testCaseId: number): string | undefined {
+  if (!featurePath) return undefined;
+  const feature = parseFeatureFile(featurePath);
+  const scenario = feature.scenarios.find((s) => s.tags.includes(`@testcase:${testCaseId}`));
+  const acTag = scenario?.tags.map((t) => t.match(/^@ac:([\d,-]+)$/)).find(Boolean);
+  return acTag ? `AC ${acTag[1]}` : undefined;
 }
 
 function parseArgs(argv: string[]): Record<string, string> {
@@ -82,7 +94,7 @@ function escapeHtml(value: string): string {
 // silently dropped), so evidence goes on the Bug as a real attachment
 // (AzureDevOpsClient.attachFileToWorkItem) instead of embedded HTML — this only
 // builds the step-by-step text.
-function buildReproStepsHtml(testCaseId: number, steps: StepInput[], overallComment: string): string {
+function buildReproStepsHtml(testCaseId: number, steps: StepInput[], overallComment: string, acLabel?: string): string {
   const rows = steps
     .map((step) => {
       const badge = step.outcome === "Failed" ? "<b style='color:#c00'>FALLÓ</b>" : `<b>${step.outcome}</b>`;
@@ -90,8 +102,9 @@ function buildReproStepsHtml(testCaseId: number, steps: StepInput[], overallComm
       return `<li>${badge} — ${escapeHtml(step.comment)}${evidenceNote}</li>`;
     })
     .join("\n");
+  const acLine = acLabel ? `<p><b>Criterio de aceptación asociado:</b> ${escapeHtml(acLabel)}</p>` : "";
   return `<p>Encontrado ejecutando manualmente el Test Case ${testCaseId} (ver detalle y evidencia paso a paso en ese Test Case).</p>
-<p><b>Resumen:</b> ${escapeHtml(overallComment)}</p>
+${acLine}<p><b>Resumen:</b> ${escapeHtml(overallComment)}</p>
 <ol>${rows}</ol>`;
 }
 
@@ -158,9 +171,11 @@ async function main(): Promise<void> {
 
     if (input.overallOutcome === "Failed") {
       const failingStep = input.steps.find((s) => s.outcome === "Failed") ?? input.steps[input.steps.length - 1];
+      const acLabel = getAcLabel(data.featurePath, testCaseId);
+      const acPrefix = acLabel ? `[${acLabel}] ` : "";
 
       if (input.existingBugId) {
-        await client.addWorkItemComment(input.existingBugId, `Re-verificado: ${input.overallComment}`);
+        await client.addWorkItemComment(input.existingBugId, `Re-verificado (${acLabel ?? "sin AC asociado"}): ${input.overallComment}`);
         if (failingStep?.screenshot && fs.existsSync(failingStep.screenshot)) {
           const base64 = fs.readFileSync(failingStep.screenshot).toString("base64");
           await client.attachFileToWorkItem(input.existingBugId, path.basename(failingStep.screenshot), base64, `Re-verificacion: ${failingStep.comment}`);
@@ -168,9 +183,9 @@ async function main(): Promise<void> {
         logger.warn(`Bug ${input.existingBugId}: added re-verification comment + evidence for Test Case ${testCaseId} (no new Bug created)`);
       } else {
         const bug = await client.createBug({
-          "System.Title": `[HU-90129] Test Case ${testCaseId}: ${input.overallComment.slice(0, 110)}`,
-          "Microsoft.VSTS.TCM.ReproSteps": buildReproStepsHtml(testCaseId, input.steps, input.overallComment),
-          "System.Tags": "manual-testing; HU-90129",
+          "System.Title": `[HU-90129] ${acPrefix}Test Case ${testCaseId}: ${input.overallComment.slice(0, 110)}`,
+          "Microsoft.VSTS.TCM.ReproSteps": buildReproStepsHtml(testCaseId, input.steps, input.overallComment, acLabel),
+          "System.Tags": `manual-testing; HU-90129${acLabel ? `; ${acLabel.replace(" ", "-")}` : ""}`,
         });
         if (bug.id) {
           await client.linkWorkItems(bug.id, testCaseId, "System.LinkTypes.Related");

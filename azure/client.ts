@@ -141,6 +141,16 @@ export class AzureDevOpsClient {
     return workItem;
   }
 
+  /** Generic field update for any work item type (Bug, HU, ...) — updateTestCase is this same call, named for its usual caller. */
+  async updateWorkItem(id: number, fields: Record<string, string | number>): Promise<WorkItem> {
+    const connection = await this.getConnection();
+    const witApi = await connection.getWorkItemTrackingApi();
+    const document = this.toPatchDocument(fields);
+    const workItem = await witApi.updateWorkItem({}, document, id, this.project);
+    logger.info(`Updated work item ${id}: ${fields["System.Title"] ?? Object.keys(fields).join(", ")}`);
+    return workItem;
+  }
+
   async createBug(fields: Record<string, string | number>): Promise<WorkItem> {
     const connection = await this.getConnection();
     const witApi = await connection.getWorkItemTrackingApi();
