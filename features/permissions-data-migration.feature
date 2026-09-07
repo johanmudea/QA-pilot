@@ -11,20 +11,20 @@ Característica: Migración de permisos y datos a las nuevas tablas
   Quiero que los datos y permisos se migren a la nueva estructura de tablas sin pérdidas
   Para garantizar la continuidad de la información
 
-  @hu:89938 @regression @critical @testcase:91426
-  Escenario: CP_01 - TC91426 - Los datos migrados conservan integridad y relaciones
+  @hu:89938 @regression @critical @ac:1 @testcase:91426
+  Escenario: CP_01 - TC91426 - [AC 1] Los datos migrados conservan integridad y relaciones
     Dado que se ejecutó la migración de datos de las tablas antiguas a las nuevas tablas
     Entonces cada registro de las tablas antiguas debe tener su correspondiente registro en las nuevas tablas
     Y las relaciones existentes entre registros deben conservarse
 
-  @hu:89938 @regression @critical @testcase:91427
-  Escenario: CP_02 - TC91427 - Los datos migrados no presentan duplicidades ni inconsistencias
+  @hu:89938 @regression @critical @ac:4 @testcase:91427
+  Escenario: CP_02 - TC91427 - [AC 4] Los datos migrados no presentan duplicidades ni inconsistencias
     Dado que se ejecutó la migración de datos de las tablas antiguas a las nuevas tablas
     Entonces no deben existir registros duplicados en las nuevas tablas
     Y no deben existir inconsistencias entre las tablas antiguas y las nuevas
 
-  @hu:89938 @regression @testcase:91428
-  Escenario: CP_03 - TC91428 - Los permisos se migran y quedan correctamente configurados en la nueva estructura
+  @hu:89938 @regression @ac:2,3 @testcase:91428
+  Escenario: CP_03 - TC91428 - [AC 2,3] Los permisos se migran y quedan correctamente configurados en la nueva estructura
     Dado que se ejecutó la migración de permisos
     Entonces los permisos previamente configurados deben existir en la nueva estructura
     Y los permisos de nueva creación deben estar correctamente configurados

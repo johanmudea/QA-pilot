@@ -9,39 +9,39 @@ Característica: Pantalla de Ranking de usuarios y filtros
   Antecedentes:
     Dado que el usuario está en la pantalla de Ranking de Usuarios
 
-  @hu:90059 @regression @smoke @testcase:91430
-  Escenario: CP_01 - TC91430 - La pantalla muestra los mensajes descriptivo y de confidencialidad
+  @hu:90059 @regression @smoke @ac:2,3 @testcase:91430
+  Escenario: CP_01 - TC91430 - [AC 2,3] La pantalla muestra los mensajes descriptivo y de confidencialidad
     Entonces el mensaje descriptivo "En este espacio podrás consultar el ranking y detalle de los usuarios" debe estar visible
     Y el mensaje de confidencialidad debe estar visible
 
-  @hu:90059 @regression @critical @testcase:91431
-  Escenario: CP_02 - TC91431 - Se muestran los filtros iniciales
+  @hu:90059 @regression @critical @ac:8,10 @testcase:91431
+  Escenario: CP_02 - TC91431 - [AC 8,10] Se muestran los filtros iniciales
     Entonces los filtros "Fecha inicial", "Fecha final", "Tipo de requerimiento", "Área del responsable", "Proceso al que pertenece" y "Compañía" deben estar visibles
     Y el contador de resultados debe estar visible
 
-  @hu:90059 @regression @critical @testcase:91432
-  Escenario: CP_03 - TC91432 - Seleccionar Reclamos en Tipo de requerimiento habilita sus filtros dependientes
+  @hu:90059 @regression @critical @ac:11 @testcase:91432
+  Escenario: CP_03 - TC91432 - [AC 11] Seleccionar Reclamos en Tipo de requerimiento habilita sus filtros dependientes
     Cuando el usuario selecciona "Reclamos" en el filtro "Tipo de requerimiento"
     Entonces los filtros "Tipo de gestión" y "Estado" deben habilitarse
 
-  @hu:90059 @regression @testcase:91433
-  Escenario: CP_04 - TC91433 - Seleccionar Felicitaciones en Tipo de requerimiento habilita su filtro dependiente
+  @hu:90059 @regression @ac:12 @testcase:91433
+  Escenario: CP_04 - TC91433 - [AC 12] Seleccionar Felicitaciones en Tipo de requerimiento habilita su filtro dependiente
     Cuando el usuario selecciona "Felicitaciones" en el filtro "Tipo de requerimiento"
     Entonces el filtro "Tipo de felicitación" debe habilitarse
 
-  @hu:90059 @regression @testcase:91434
-  Escenario: CP_05 - TC91434 - Seleccionar una Compañía habilita sus filtros dependientes y los reinicia al cambiar
+  @hu:90059 @regression @ac:14,16 @testcase:91434
+  Escenario: CP_05 - TC91434 - [AC 14,16] Seleccionar una Compañía habilita sus filtros dependientes y los reinicia al cambiar
     Cuando el usuario selecciona una "Compañía"
     Entonces los filtros "Usuario responsable" y "Sociedad" deben habilitarse
     Cuando el usuario cambia la "Compañía" seleccionada
     Entonces los valores previamente seleccionados en "Usuario responsable" y "Sociedad" deben limpiarse
 
-  @hu:90059 @regression @critical @testcase:91435
-  Escenario: CP_06 - TC91435 - Aplicar filtros actualiza el contador de resultados
+  @hu:90059 @regression @critical @ac:9,18 @testcase:91435
+  Escenario: CP_06 - TC91435 - [AC 9,18] Aplicar filtros actualiza el contador de resultados
     Cuando el usuario aplica los filtros
     Entonces el contador de resultados debe actualizarse según la consulta
 
-  @hu:90059 @regression @testcase:91436
-  Escenario: CP_07 - TC91436 - Limpiar filtros restablece el componente a su estado inicial
+  @hu:90059 @regression @ac:19 @testcase:91436
+  Escenario: CP_07 - TC91436 - [AC 19] Limpiar filtros restablece el componente a su estado inicial
     Cuando el usuario limpia los filtros
     Entonces todos los filtros deben volver a su estado inicial

@@ -9,25 +9,25 @@ Característica: Pantalla de Consulta de Proveedores 360
   Antecedentes:
     Dado que el usuario está en la pantalla de Consulta de Proveedores 360
 
-  @hu:90064 @regression @smoke @testcase:91444
-  Escenario: CP_01 - TC91444 - La pantalla muestra el mensaje descriptivo y no hay resultados antes de buscar
+  @hu:90064 @regression @smoke @ac:2,15,17 @testcase:91444
+  Escenario: CP_01 - TC91444 - [AC 2,15,17] La pantalla muestra el mensaje descriptivo y no hay resultados antes de buscar
     Entonces el mensaje descriptivo "En este espacio podrás consultar las evaluaciones y PQRS de tus proveedores" debe estar visible
     Y debe mostrarse un mensaje informativo indicando que se requiere una búsqueda
     Y no debe mostrarse información de proveedores
 
-  @hu:90064 @regression @critical @testcase:91445
-  Escenario: CP_02 - TC91445 - Los filtros de búsqueda están disponibles
+  @hu:90064 @regression @critical @ac:7,8,9,10,11,12 @testcase:91445
+  Escenario: CP_02 - TC91445 - [AC 7,8,9,10,11,12] Los filtros de búsqueda están disponibles
     Entonces los filtros "Nombre del proveedor", "ID Fiscal" y "Código o ID ERP" deben aceptar ingreso manual de texto
     Y el filtro "Tipo de información" debe permitir seleccionar múltiples opciones entre "PQRS", "SAP" y "Prevsis"
 
-  @hu:90064 @regression @critical @testcase:91446
-  Escenario: CP_03 - TC91446 - Aplicar filtros ejecuta la consulta y conserva los filtros diligenciados
+  @hu:90064 @regression @critical @ac:13,18 @testcase:91446
+  Escenario: CP_03 - TC91446 - [AC 13,18] Aplicar filtros ejecuta la consulta y conserva los filtros diligenciados
     Cuando el usuario aplica los filtros
     Entonces la consulta debe ejecutarse utilizando todos los criterios seleccionados
     Y los filtros diligenciados deben permanecer visibles después de la consulta
 
-  @hu:90064 @regression @testcase:91447
-  Escenario: CP_04 - TC91447 - Limpiar filtros restablece el componente a su estado inicial
+  @hu:90064 @regression @ac:14 @testcase:91447
+  Escenario: CP_04 - TC91447 - [AC 14] Limpiar filtros restablece el componente a su estado inicial
     Cuando el usuario limpia los filtros
     Entonces todos los filtros deben volver a su estado inicial
     Y debe mostrarse nuevamente el mensaje informativo indicando que se requiere una búsqueda

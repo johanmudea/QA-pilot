@@ -13,7 +13,8 @@ import { logger } from "../helpers/logger";
  *   - If it already carries "@testcase:<id>", UPDATES that Test Case's title/steps/
  *     tags in place (e.g. after re-translating the Gherkin) — no suite/link work.
  *   - Otherwise CREATES a new Test Case (title + Microsoft.VSTS.TCM.Steps from the
- *     Gherkin steps, System.Tags from @regression/@critical/@smoke), links it to the
+ *     Gherkin steps, System.Tags from @regression/@critical/@smoke plus "AC-<n>"
+ *     per number in an @ac:<n>[,<n>...] or @ac:<n>-<m> tag), links it to the
  *     HU from the scenario's @hu:<id> tag ("Tests" relation), and adds it to a
  *     Requirement-based Suite for that HU (created once under --parentSuite —
  *     rules/gherkin-policy.md, rules/azure-policy.md), then tags the scenario with
@@ -46,6 +47,22 @@ function classificationTags(scenario: ParsedScenario): string[] {
     .map((t) => t.match(/^@(\w+)$/))
     .filter((m): m is RegExpMatchArray => Boolean(m) && CLASSIFICATION_TAGS.includes(m![1]))
     .map((m) => m[1]);
+}
+
+/** "@ac:5,6" or "@ac:5-10" -> ["AC-5", "AC-6"] / ["AC-5", ..., "AC-10"], for System.Tags visibility in Azure. */
+function acceptanceCriteriaTags(scenario: ParsedScenario): string[] {
+  const match = scenario.tags.map((t) => t.match(/^@ac:([\d,-]+)$/)).find(Boolean);
+  if (!match) return [];
+  const numbers = new Set<number>();
+  for (const part of match[1].split(",")) {
+    const range = part.match(/^(\d+)-(\d+)$/);
+    if (range) {
+      for (let n = Number(range[1]); n <= Number(range[2]); n += 1) numbers.add(n);
+    } else {
+      numbers.add(Number(part));
+    }
+  }
+  return [...numbers].sort((a, b) => a - b).map((n) => `AC-${n}`);
 }
 
 function existingTestCaseId(scenario: ParsedScenario): number | undefined {
@@ -101,7 +118,7 @@ async function main(): Promise<void> {
   for (const scenario of scenariosToProcess) {
     const rows = gherkinStepsToTcmRows(scenario.steps);
     const stepsXml = buildTcmStepsXml(rows);
-    const tags = classificationTags(scenario);
+    const tags = [...classificationTags(scenario), ...acceptanceCriteriaTags(scenario)];
     const fields = {
       "System.Title": scenario.name,
       "Microsoft.VSTS.TCM.Steps": stepsXml,
